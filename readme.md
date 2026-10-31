@@ -14,10 +14,14 @@
 ## 0. Ficha del proyecto
 
 ### **0.1. Tu nombre completo:**
+Pablo Guillermo Di Nanno
 
 ### **0.2. Nombre del proyecto:**
+WeatherTrack
 
 ### **0.3. Descripción breve del proyecto:**
+
+> Aplicación multiplataforma para la observación de índices y variables meteorológicas.
 
 ### **0.4. URL del proyecto:**
 
@@ -36,11 +40,24 @@
 
 ### **1.1. Objetivo:**
 
-> Propósito del producto. Qué valor aporta, qué soluciona, y para quién.
+> El propósito de weathertrack es proveer un ecosistema centralizado e inteligente para la monitorización y análisis de variables meteorológicas, adaptándose dinámicamente a la complejidad requerida por el usuario. El sistema soluciona la fragmentación de la información climática ofreciendo una experiencia multiplataforma escalable: democratiza el acceso a datos instantáneos para el público general, optimiza la toma de decisiones del sector agrícola mediante proyecciones, y habilita la investigación científica profunda mediante el análisis de acumulados históricos y fenómenos macroclimáticos
 
 ### **1.2. Características y funcionalidades principales:**
 
-> Enumera y describe las características y funcionalidades específicas que tiene el producto para satisfacer las necesidades identificadas.
+> La plataforma basa su funcionamiento en un sistema de roles estructurado en tres niveles de profundidad analítica, orquestados por agentes inteligentes:  
+- Nivel 1 - Público General (Visión Instantánea):
+    - Monitorización en tiempo real de variables meteorológicas básicas.  
+    - Interfaz gráfica simplificada e intuitiva.  
+- Nivel 2 - Sector Agrícola/Productivo (Análisis y Predicción):
+    - Paneles interactivos con índices meteorológicos elaborados. 
+    - Modelos de predicción a corto y mediano plazo para soporte en tareas operativas.  
+- Nivel 3 - Académico/Investigación (Datos Complejos y Acumulados):
+    - Cálculo y visualización de índices avanzados asociados a acumulados temporales (heladas, precipitaciones, niveles de humedad de suelos, radiación solar).  
+    - Seguimiento y evaluación de fenómenos macroclimáticos (ej. índice ENO).  
+    - Acceso profundo a las bases de datos climáticas para consultas históricas y comparativas.  
+Funcionalidades Transversales (Core Agéntico y Arquitectura):
+    - Skills de Ingesta: Agentes autónomos dedicados a la recolección, validación y normalización de datos provenientes de la red de sensores.  
+    - Subagentes de Cálculo: Procesamiento asíncrono para derivar los índices complejos de los Niveles 2 y 3 sin afectar el rendimiento de la aplicación.
 
 ### **1.3. Diseño y experiencia de usuario:**
 

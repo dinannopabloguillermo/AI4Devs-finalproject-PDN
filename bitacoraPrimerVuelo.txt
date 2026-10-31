@@ -1,0 +1,74 @@
+En la preparación del navegante, se hará una inspección primaria del elemento a transportar en el viaje
+El elemento tiene un desarrollo manual inicial y creado bajo una idea de producto común
+La idea común es un tablero de índices meteorológicos ordinarios
+La idea madura hacia una serie de tratamientos de los índices para predicciones
+La idea se prepara para el vuelo en ese estado de maduración intermedia
+El navegante deberá comenzar el viaje con una inspección del elemento mediante ingeniería inversa
+	La ingeniería inversa se hará mediante herramientas Spec para elaborar un manifiesto completo
+		La primera spec será bajo herramienta de openSpec bajo CLaude Opus 5.5 modo alto
+			1er prompt:
+			Vamos a documentar como spec de OpenSpec la capability que YA existe en este proyecto:
+			la de cuentas y acceso (registro, inicio de sesión, dashboard pantallas, botones, etc.). Esto es ingeniería
+			inversa: leer el código y escribir lo que hace HOY, no proponer nada nuevo ni cambiar
+			una línea.
+			1. Explora su UI, el modelo de negocio, sus capacidades, sus debilidades, sus rutas y sus middlewares. En
+			`frontend/`: las pantallas de acceso, el estado de sesión y la protección de rutas.
+			2. Escribe `openspec/specs/auth/spec.md` con el formato exacto de una spec VIVA de
+			OpenSpec: un `## Purpose` de una o dos frases, y debajo `## Requirements`, con `###
+			Requirement:` en los que el sistema SHALL hacer algo, y bajo cada uno al menos un `####
+			Scenario:` de cuatro almohadillas con sus dos viñetas `- **WHEN**` y `- **THEN**`. En
+			castellano, salvo las mayúsculas RFC-2119.
+			3. NO uses secciones ADDED, MODIFIED ni REMOVED: eso es de un delta, y esto no es un
+			delta, es la verdad actual del sistema.
+			4. Describe solo comportamiento observable desde fuera. Nada de nombres de clase ni de
+			rutas de archivo. Toma nota de lo que necesitaría ser el backend. Lo mismo para el
+			frontend, observable = lo que una persona ve y puede hacer en pantalla.
+			5. Al terminar, dime qué comportamiento del código NO has podido expresar como
+			requisito, y por qué. Validar
+
+1ra respuesta:
+No hay carpeta `frontend/`: es una app Shiny monolítica, así que la UI está en `ui/` y `server/`. Reviso tamaños y leo los archivos relevantes.
+
+Ahora el servidor principal, que contiene el login y el dashboard.
+
+Reviso cómo usan el token las pantallas de históricos y proyecciones, y el contrato documentado de la API de login.
+
+Antes de escribir, compruebo si el CLI de OpenSpec está instalado para validar al final, y repaso el manejo de errores en proyecciones.
+
+Ya tengo el panorama completo. Escribo la spec.
+
+Escribí la spec en `openspec/specs/auth/spec.md` y pasa `openspec validate auth --type spec --strict` sin errores ni avisos. Tiene 17 requisitos, cada escenario solo con WHEN/THEN, y no toqué ninguna línea de código. No hice commit: estás en `main` y `AGENTS.md` prohíbe trabajar ahí, así que conviene pasarla a una rama antes de commitear. Tampoco ejecuté la app: todo sale de leer el código, y el escenario de la tecla Enter conviene probarlo a mano.
+
+**Sobre la estructura que pediste:** no existe `frontend/`. Es una app Shiny de una sola página. Las "rutas" son un estado interno del servidor que decide qué pantalla mostrar, y no hay middlewares: la protección consiste en que las pantallas internas no se dibujan sin sesión. Registro y recuperación de contraseña no existen; los documenté como ausencia ("SHALL NOT ofrecer").
+
+**Qué cubre la spec:** pantalla de acceso, login y sus tres mensajes de error, dashboard inicial, cambio de equipo, mapa de navegación con todos los botones, sesión atada a la pestaña, token de 5 minutos con renovación silenciosa, expiración y botón "Salir". Dejé fuera el detalle del semáforo, el índice de inversión térmica, los históricos y las proyecciones: son capacidades propias para otras specs.
+
+## Lo que no pude expresar como requisito, y por qué
+
+**Es interno, no se ve desde fuera:**
+1. **La contraseña queda en texto plano en la memoria del servidor** toda la sesión, porque la renovación silenciosa la reenvía a SAT2 cada 5 minutos. Es la debilidad de seguridad más importante.
+2. **Los 5 minutos se cuentan con el reloj del dashboard, no con el vencimiento del token.** Coincide porque el token de ejemplo de SAT2 dura exactamente 300 s. Si SAT2 cambia esa duración, la renovación deja de funcionar bien.
+3. **Si el login funciona pero falla la carga de equipos,** el token y las credenciales quedan guardados aunque la persona siga viendo la pantalla de acceso.
+4. **Los manejadores de clic de las tarjetas de sensor se duplican** con cada cambio de equipo. Además, el primer equipo se pide dos veces a SAT2 al entrar.
+
+**Es un agujero o un bug; escribirlo con SHALL lo convertiría en contrato:**
+5. **La navegación no comprueba que haya sesión.** Si alguien manda un evento de botón desde la consola del navegador, cambia de pantalla sin estar logueado.
+6. **Cuando la sesión expira, solo se borra el token.** Equipos, sensores y proyecciones siguen en memoria y se podrían ver por la vía del punto 5.
+7. **Mensaje viejo al salir:** si fallaste un login, luego entraste y después pulsaste "Salir", la pantalla de acceso vuelve a mostrar el error anterior.
+8. **Si falla el cambio de equipo,** la tarjeta muestra el equipo nuevo pero los sensores y la "Última actualización" siguen siendo del anterior.
+9. **"Ingresar" no se deshabilita ni muestra nada mientras espera,** así que varios clics envían varios logins.
+
+**Depende de SAT2 o de la plataforma, no del código:**
+10. **El mensaje "La sesión expiró. Inicie sesión nuevamente."** no puede aparecer en la práctica, porque las credenciales siempre se guardan junto con el token.
+11. **Si SAT2 devuelve 200 con algo que no es una lista de equipos,** la app probablemente se cae. No sé qué devuelve SAT2 en ese caso.
+12. **Lo que pasa con campos vacíos** depende de la respuesta de SAT2. Por eso el escenario dice "el mensaje que corresponda" sin fijar el texto.
+13. **El corte por inactividad de shinyapps.io** (pantalla gris) es configuración de la plataforma, no de la app.
+
+## Lo que este comportamiento le exige al backend (SAT2)
+
+- **Autenticación:** recibe usuario y contraseña y devuelve `autenticado`, `idCliente` y `token`. El campo `novedades` se ignora.
+- **Credenciales malas:** SAT2 tiene que responder **200 con `autenticado=false`**. Si respondiera 401, la persona vería "Falla de comunicación con SAT2" en lugar de "Usuario o contraseña inválidos".
+- **Sin endpoints de refresco ni de logout:** la renovación es volver a hacer login con la contraseña, y "Salir" no le avisa nada a SAT2. El token sigue siendo válido hasta que vence.
+- **Token en el cuerpo:** viaja dentro del JSON de cada consulta (equipos, instantáneos, históricos), no en un header.
+- **Errores:** se interpretan solo por el código HTTP distinto de 200. La app no distingue un token rechazado de una caída.
+- **Gestión de cuentas:** alta, recuperación y cambio de contraseña viven enteramente en SAT2.
